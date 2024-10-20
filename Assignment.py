@@ -4,21 +4,22 @@ import arcade
 # Screen title and size
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 768
-SCREEN_TITLE = "Solitare"
+SCREEN_TITLE = "Solitaire"
 
 # Constants for sizing
 CARD_SCALE = 0.6
 
-#card sizes
+# How big are the cards?
 CARD_WIDTH = 140 * CARD_SCALE
 CARD_HEIGHT = 190 * CARD_SCALE
 
-#mat sizes
+# How big is the mat we'll place the card on?
 MAT_PERCENT_OVERSIZE = 1.25
 MAT_HEIGHT = int(CARD_HEIGHT * MAT_PERCENT_OVERSIZE)
 MAT_WIDTH = int(CARD_WIDTH * MAT_PERCENT_OVERSIZE)
 
-# gap between mats (Done as a percent of the mat size.)
+# How much space do we leave as a gap between the mats?
+# Done as a percent of the mat size.
 VERTICAL_MARGIN_PERCENT = 0.10
 HORIZONTAL_MARGIN_PERCENT = 0.10
 
@@ -43,6 +44,9 @@ CARD_SUITS = ["Clubs", "Hearts", "Spades", "Diamonds"]
 
 # If we fan out cards stacked on each other, how far apart to fan them?
 CARD_VERTICAL_OFFSET = CARD_HEIGHT * CARD_SCALE * 0.3
+
+# Face down image
+FACE_DOWN_IMAGE = ":resources:images/cards/cardBack_red2.png"
 
 # Constants that represent "what pile is what" for the game
 PILE_COUNT = 13
@@ -73,9 +77,23 @@ class Card(arcade.Sprite):
 
         # Image to use for the sprite when face up
         self.image_file_name = f":resources:images/cards/card{self.suit}{self.value}.png"
+        self.is_face_up = False
+        super().__init__(FACE_DOWN_IMAGE, scale, hit_box_algorithm="None")
 
-        # Call the parent
-        super().__init__(self.image_file_name, scale, hit_box_algorithm="None")
+    def face_down(self):
+        """ Turn card face-down """
+        self.texture = arcade.load_texture(FACE_DOWN_IMAGE)
+        self.is_face_up = False
+
+    def face_up(self):
+        """ Turn card face-up """
+        self.texture = arcade.load_texture(self.image_file_name)
+        self.is_face_up = True
+
+    @property
+    def is_face_down(self):
+        """ Is this card face down? """
+        return not self.is_face_up
 
 
 class MyGame(arcade.Window):
@@ -162,6 +180,24 @@ class MyGame(arcade.Window):
         for card in self.card_list:
             self.piles[BOTTOM_FACE_DOWN_PILE].append(card)
 
+        # - Pull from that pile into the middle piles, all face-down
+        # Loop for each pile
+        for pile_no in range(PLAY_PILE_1, PLAY_PILE_7 + 1):
+            # Deal proper number of cards for that pile
+            for j in range(pile_no - PLAY_PILE_1 + 1):
+                # Pop the card off the deck we are dealing from
+                card = self.piles[BOTTOM_FACE_DOWN_PILE].pop()
+                # Put in the proper pile
+                self.piles[pile_no].append(card)
+                # Move card to same position as pile we just put it in
+                card.position = self.pile_mat_list[pile_no].position
+                # Put on top in draw order
+                self.pull_to_top(card)
+
+        # Flip up the top cards
+        for i in range(PLAY_PILE_1, PLAY_PILE_7 + 1):
+            self.piles[i][-1].face_up()
+
     def on_draw(self):
         """ Render the screen. """
         # Clear the screen
@@ -191,13 +227,29 @@ class MyGame(arcade.Window):
 
             # Might be a stack of cards, get the top one
             primary_card = cards[-1]
+            assert isinstance(primary_card, Card)
 
-            # All other cases, grab the face-up card we are clicking on
-            self.held_cards = [primary_card]
-            # Save the position
-            self.held_cards_original_position = [self.held_cards[0].position]
-            # Put on top in drawing order
-            self.pull_to_top(self.held_cards[0])
+            # Figure out what pile the card is in
+            pile_index = self.get_pile_for_card(primary_card)
+
+            if primary_card.is_face_down:
+                # Is the card face down? In one of those middle 7 piles? Then flip up
+                primary_card.face_up()
+            else:
+                # All other cases, grab the face-up card we are clicking on
+                self.held_cards = [primary_card]
+                # Save the position
+                self.held_cards_original_position = [self.held_cards[0].position]
+                # Put on top in drawing order
+                self.pull_to_top(self.held_cards[0])
+
+                # Is this a stack of cards? If so, grab the other cards too
+                card_index = self.piles[pile_index].index(primary_card)
+                for i in range(card_index + 1, len(self.piles[pile_index])):
+                    card = self.piles[pile_index][i]
+                    self.held_cards.append(card)
+                    self.held_cards_original_position.append(card.position)
+                    self.pull_to_top(card)
 
     def remove_card_from_pile(self, card):
         """ Remove card from whatever pile it was in. """
