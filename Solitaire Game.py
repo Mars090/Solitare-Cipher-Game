@@ -42,7 +42,8 @@ MIDDLE_Y = TOP_Y - MAT_HEIGHT - MAT_HEIGHT * VERTICAL_MARGIN_PERCENT
 X_SPACING = MAT_WIDTH + MAT_WIDTH * HORIZONTAL_MARGIN_PERCENT
 
 # Card constants
-CARD_VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+CARD_VALUES = ["A", "2", "3", "4", "5",
+               "6", "7", "8", "9", "10", "J", "Q", "K"]
 CARD_SUITS = ["Clubs", "Hearts", "Spades", "Diamonds"]
 
 # If we fan out cards stacked on each other, how far apart to fan them?
@@ -68,9 +69,15 @@ TOP_PILE_3 = 11
 TOP_PILE_4 = 12
 
 PHRASES = [
-    "Bollocks", 
-    "Chromakopia", 
-    "I have to go do Physics"
+    "Rihanna",
+    "Lady Gaga",
+    "Beyonce",
+    "Katy Perry",
+    "Miley Cyrus",
+    "Zara Larsson",
+    "Sabrina Carpenter",
+    "Estelle",
+    "Laufey"
 ]
 
 
@@ -129,25 +136,29 @@ class MyGame(arcade.Window):
         # Create a list of lists, each holds a pile of cards.
         self.piles = None
 
+        # add level system
+        self.level = 1  # start from lvl 1
+
     def setup(self):
         """ Set up the game here. Call this function to restart the game. """
 
-        #initialise cipher deck
+        # initialise cipher deck
         self.deck = cipher.initialise_deck()
-        self.initial_deck = self.deck.copy() #save initial state
+        self.initial_deck = self.deck.copy()  # save initial state
 
-        #select random phrase
+        # select random phrase
         self.selected_phrase = random.choice(PHRASES)
 
-        #encrypt selected phrase
-        self.encrypted_message = cipher.encrypt(self.selected_phrase, self.initial_deck.copy())
-    
+        # encrypt selected phrase
+        self.encrypted_message = cipher.encrypt(
+            self.selected_phrase, self.initial_deck.copy())
 
-        #initialise revealed message 
-        self.revealed_message = ""
+        # initialise revealed message
+        self.revealed_message = ["_"] * len(self.encrypted_message)
+
         self.current_keystream_index = 0
 
-        print(f"Encrypted msg (for testing)") #TESTING TAKE OUT AFTER
+        print(f"Encrypted msg (for testing)")  # TESTING TAKE OUT AFTER
 
         # List of cards we are dragging with the mouse
         self.held_cards = []
@@ -162,23 +173,27 @@ class MyGame(arcade.Window):
         self.pile_mat_list: arcade.SpriteList = arcade.SpriteList()
 
         # Create the mats for the bottom face down and face up piles
-        pile = arcade.SpriteSolidColor(MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
+        pile = arcade.SpriteSolidColor(
+            MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
         pile.position = START_X, BOTTOM_Y
         self.pile_mat_list.append(pile)
 
-        pile = arcade.SpriteSolidColor(MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
+        pile = arcade.SpriteSolidColor(
+            MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
         pile.position = START_X + X_SPACING, BOTTOM_Y
         self.pile_mat_list.append(pile)
 
         # Create the seven middle piles
         for i in range(7):
-            pile = arcade.SpriteSolidColor(MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
+            pile = arcade.SpriteSolidColor(
+                MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
             pile.position = START_X + i * X_SPACING, MIDDLE_Y
             self.pile_mat_list.append(pile)
 
         # Create the top "play" piles
         for i in range(4):
-            pile = arcade.SpriteSolidColor(MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
+            pile = arcade.SpriteSolidColor(
+                MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
             pile.position = START_X + i * X_SPACING, TOP_Y
             self.pile_mat_list.append(pile)
 
@@ -224,6 +239,74 @@ class MyGame(arcade.Window):
         for i in range(PLAY_PILE_1, PLAY_PILE_7 + 1):
             self.piles[i][-1].face_up()
 
+    def get_phrase_for_level(self):
+        '''select phrase of increasing length for difficulties'''
+        return PHRASES[min(self.level - 1, len(PHRASES) - 1)]  # cap at length of PHRASES list
+
+    def setup_board(self):
+        """ Setup the cards and piles for a new board """
+        # --- Create the mats the cards go on.
+        self.pile_mat_list: arcade.SpriteList = arcade.SpriteList()
+
+        # Create the mats for the bottom face down and face up piles
+        pile = arcade.SpriteSolidColor(
+            MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
+        pile.position = START_X, BOTTOM_Y
+        self.pile_mat_list.append(pile)
+
+        pile = arcade.SpriteSolidColor(
+            MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
+        pile.position = START_X + X_SPACING, BOTTOM_Y
+        self.pile_mat_list.append(pile)
+
+        # Create the seven middle piles
+        for i in range(7):
+            pile = arcade.SpriteSolidColor(
+                MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
+            pile.position = START_X + i * X_SPACING, MIDDLE_Y
+            self.pile_mat_list.append(pile)
+
+        # Create the top "play" piles
+        for i in range(4):
+            pile = arcade.SpriteSolidColor(
+                MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
+            pile.position = START_X + i * X_SPACING, TOP_Y
+            self.pile_mat_list.append(pile)
+
+        # --- Create, shuffle, and deal the cards
+        self.card_list = arcade.SpriteList()
+
+        # Create every card
+        for card_suit in CARD_SUITS:
+            for card_value in CARD_VALUES:
+                card = Card(card_suit, card_value, CARD_SCALE)
+                card.position = START_X, BOTTOM_Y
+                self.card_list.append(card)
+
+        # Shuffle the cards
+        for pos1 in range(len(self.card_list)):
+            pos2 = random.randrange(len(self.card_list))
+            self.card_list.swap(pos1, pos2)
+
+        # Create a list of lists, each holds a pile of cards.
+        self.piles = [[] for _ in range(PILE_COUNT)]
+
+        # Put all the cards in the bottom face-down pile
+        for card in self.card_list:
+            self.piles[BOTTOM_FACE_DOWN_PILE].append(card)
+
+        # Pull from that pile into the middle piles, all face-down
+        for pile_no in range(PLAY_PILE_1, PLAY_PILE_7 + 1):
+            for j in range(pile_no - PLAY_PILE_1 + 1):
+                card = self.piles[BOTTOM_FACE_DOWN_PILE].pop()
+                self.piles[pile_no].append(card)
+                card.position = self.pile_mat_list[pile_no].position
+                self.pull_to_top(card)
+
+        # Flip up the top cards
+        for i in range(PLAY_PILE_1, PLAY_PILE_7 + 1):
+            self.piles[i][-1].face_up()
+
     def on_draw(self):
         """ Render the screen. """
         # Clear the screen
@@ -235,8 +318,15 @@ class MyGame(arcade.Window):
         # Draw the cards
         self.card_list.draw()
 
-        #draw the decrypted message
-        arcade.draw_text(f"Decrypted Message: {self.revealed_message}", 10, 10, arcade.color.WHITE, 14)
+        # display both encrypted and gradually revealed msg
+        encrypted_msg_display = ''.join(self.encrypted_message)
+        revealed_msg_display = ''.join(self.revealed_message)
+
+        # draw encrypted message at top
+        arcade.draw_text(
+            f"Encrypted Message: {encrypted_msg_display}", 600, 70, arcade.color.WHITE, 14)
+        arcade.draw_text(
+            f"Decrypted Message: {revealed_msg_display}", 600, 30, arcade.color.WHITE, 14)
 
     def pull_to_top(self, card: arcade.Sprite):
         """ Pull card to top of rendering order (last to render, looks on-top) """
@@ -287,12 +377,11 @@ class MyGame(arcade.Window):
                     # Put on top draw-order wise
                     self.pull_to_top(card)
 
-                #trigger solitaire cipher, move joker A, joker B, and perform cuts
+                # trigger solitaire cipher, move joker A, joker B, and perform cuts
                 cipher.move_joker_a(self.deck)
                 cipher.move_joker_b(self.deck)
                 self.deck = cipher.triple_cut(self.deck)
                 self.deck = cipher.count_cut(self.deck)
-
 
             elif primary_card.is_face_down:
                 # Is the card face down? In one of those middle 7 piles? Then flip up
@@ -301,7 +390,8 @@ class MyGame(arcade.Window):
                 # All other cases, grab the face-up card we are clicking on
                 self.held_cards = [primary_card]
                 # Save the position
-                self.held_cards_original_position = [self.held_cards[0].position]
+                self.held_cards_original_position = [
+                    self.held_cards[0].position]
                 # Put on top in drawing order
                 self.pull_to_top(self.held_cards[0])
 
@@ -344,7 +434,7 @@ class MyGame(arcade.Window):
         for index, pile in enumerate(self.piles):
             if card in pile:
                 return index
-            
+
     def get_card_colour(self, card: Card) -> str:
         '''return card colour based on suit'''
         if card.suit in ['Clubs', 'Spades']:
@@ -430,18 +520,23 @@ class MyGame(arcade.Window):
                 self.deck = cipher.count_cut(self.deck)  # Perform count cut
                 keystream = cipher.generate_keystream(self.deck, 1)  # Generate keystream
 
-                #decrypt one more letter from the encrypted msg
-                decrypted_part = cipher.decrypt(self.encrypted_message[:self.current_keystream_index + 1], self.initial_deck.copy())[:self.current_keystream_index + 1]
+                # Reveal one more letter
+                if self.current_keystream_index < len(self.encrypted_message):
+                    # Decrypt next letter using current keystream
+                    decrypted_letter = cipher.decrypt(self.encrypted_message[:self.current_keystream_index + 1], self.initial_deck.copy())[-1]
 
-                # Update the revealed message
-                self.revealed_message = decrypted_part
-                self.current_keystream_index += 1
+                    # Replace corresponding character in revealed_message list
+                    self.revealed_message[self.current_keystream_index] = decrypted_letter
 
-                print(f"Decrypted Message So Far: {self.revealed_message}")  # Print for now, can display in UI later
+                    # Move to next letter
+                    self.current_keystream_index += 1
+
+                # Check if the player has finished revealing the message
+                if "".join(self.revealed_message) == self.encrypted_message:
+                    self.advance_level()
 
         if reset_position:
-            # Wherever we were dropped, it wasn't valid. Reset the each card's position
-            # to its original spot.
+            # Wherever we were dropped, it wasn't valid. Reset each card's position
             for pile_index, card in enumerate(self.held_cards):
                 card.position = self.held_cards_original_position[pile_index]
 
@@ -449,21 +544,25 @@ class MyGame(arcade.Window):
         self.held_cards = []
 
 
+    def advance_level(self):
+        '''move to next level'''
+        print(f"Level {self.level} complete! Advancing to next level.")
+        self.level += 1
+        self.setup()
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
         """ User moves mouse """
-        
+
         # If we are holding cards, move them with the mouse
         for card in self.held_cards:
             new_x = card.center_x + dx
             new_y = card.center_y + dy
-            
+
             # Ensure the card doesn't go beyond the window borders
             if CARD_WIDTH / 2 <= new_x <= SCREEN_WIDTH - CARD_WIDTH / 2:
                 card.center_x = new_x
             if CARD_HEIGHT / 2 <= new_y <= SCREEN_HEIGHT - CARD_HEIGHT / 2:
                 card.center_y = new_y
-
 
 
 def main():
