@@ -1,3 +1,6 @@
+from typing import Optional
+
+import Solitare_Cipher as cipher
 import random
 import arcade
 
@@ -64,6 +67,12 @@ TOP_PILE_2 = 10
 TOP_PILE_3 = 11
 TOP_PILE_4 = 12
 
+PHRASES = [
+    "Bollocks", 
+    "Chromakopia", 
+    "I have to go do Physics"
+]
+
 
 class Card(arcade.Sprite):
     """ Card sprite """
@@ -103,7 +112,7 @@ class MyGame(arcade.Window):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
 
         # Sprite list with all the cards, no matter what pile they are in.
-        self.card_list = None
+        self.card_list: Optional[arcade.SpriteList] = None
 
         arcade.set_background_color(arcade.color.AMAZON)
 
@@ -122,6 +131,23 @@ class MyGame(arcade.Window):
 
     def setup(self):
         """ Set up the game here. Call this function to restart the game. """
+
+        #initialise cipher deck
+        self.deck = cipher.initialise_deck()
+        self.initial_deck = self.deck.copy() #save initial state
+
+        #select random phrase
+        self.selected_phrase = random.choice(PHRASES)
+
+        #encrypt selected phrase
+        self.encrypted_message = cipher.encrypt(self.selected_phrase, self.initial_deck.copy())
+    
+
+        #initialise revealed message 
+        self.revealed_message = ""
+        self.current_keystream_index = 0
+
+        print(f"Encrypted msg (for testing)") #TESTING TAKE OUT AFTER
 
         # List of cards we are dragging with the mouse
         self.held_cards = []
@@ -209,12 +235,21 @@ class MyGame(arcade.Window):
         # Draw the cards
         self.card_list.draw()
 
+        #draw the decrypted message
+        arcade.draw_text(f"Decrypted Message: {self.revealed_message}", 10, 10, arcade.color.WHITE, 14)
+
     def pull_to_top(self, card: arcade.Sprite):
         """ Pull card to top of rendering order (last to render, looks on-top) """
 
         # Remove, and append to the end
         self.card_list.remove(card)
         self.card_list.append(card)
+
+    def on_key_press(self, symbol: int, modifiers: int):
+        """ User presses key """
+        if symbol == arcade.key.R:
+            # Restart
+            self.setup()
 
     def on_mouse_press(self, x, y, button, key_modifiers):
         """ Called when the user presses a mouse button. """
@@ -232,7 +267,34 @@ class MyGame(arcade.Window):
             # Figure out what pile the card is in
             pile_index = self.get_pile_for_card(primary_card)
 
-            if primary_card.is_face_down:
+            # Are we clicking on the bottom deck, to flip three cards?
+            if pile_index == BOTTOM_FACE_DOWN_PILE:
+                # Flip three cards
+                for i in range(3):
+                    # If we ran out of cards, stop
+                    if len(self.piles[BOTTOM_FACE_DOWN_PILE]) == 0:
+                        break
+                    # Get top card
+                    card = self.piles[BOTTOM_FACE_DOWN_PILE][-1]
+                    # Flip face up
+                    card.face_up()
+                    # Move card position to bottom-right face up pile
+                    card.position = self.pile_mat_list[BOTTOM_FACE_UP_PILE].position
+                    # Remove card from face down pile
+                    self.piles[BOTTOM_FACE_DOWN_PILE].remove(card)
+                    # Move card to face up list
+                    self.piles[BOTTOM_FACE_UP_PILE].append(card)
+                    # Put on top draw-order wise
+                    self.pull_to_top(card)
+
+                #trigger solitaire cipher, move joker A, joker B, and perform cuts
+                cipher.move_joker_a(self.deck)
+                cipher.move_joker_b(self.deck)
+                self.deck = cipher.triple_cut(self.deck)
+                self.deck = cipher.count_cut(self.deck)
+
+
+            elif primary_card.is_face_down:
                 # Is the card face down? In one of those middle 7 piles? Then flip up
                 primary_card.face_up()
             else:
@@ -251,6 +313,25 @@ class MyGame(arcade.Window):
                     self.held_cards_original_position.append(card.position)
                     self.pull_to_top(card)
 
+        else:
+
+            # Click on a mat instead of a card?
+            mats = arcade.get_sprites_at_point((x, y), self.pile_mat_list)
+
+            if len(mats) > 0:
+                mat = mats[0]
+                mat_index = self.pile_mat_list.index(mat)
+
+                # Is it our turned over flip mat? and no cards on it?
+                if mat_index == BOTTOM_FACE_DOWN_PILE and len(self.piles[BOTTOM_FACE_DOWN_PILE]) == 0:
+                    # Flip the deck back over so we can restart
+                    temp_list = self.piles[BOTTOM_FACE_UP_PILE].copy()
+                    for card in reversed(temp_list):
+                        card.face_down()
+                        self.piles[BOTTOM_FACE_UP_PILE].remove(card)
+                        self.piles[BOTTOM_FACE_DOWN_PILE].append(card)
+                        card.position = self.pile_mat_list[BOTTOM_FACE_DOWN_PILE].position
+
     def remove_card_from_pile(self, card):
         """ Remove card from whatever pile it was in. """
         for pile in self.piles:
@@ -263,70 +344,103 @@ class MyGame(arcade.Window):
         for index, pile in enumerate(self.piles):
             if card in pile:
                 return index
+            
+    def get_card_colour(self, card: Card) -> str:
+        '''return card colour based on suit'''
+        if card.suit in ['Clubs', 'Spades']:
+            return "Black"
+        else:
+            return "Red"
 
     def move_card_to_new_pile(self, card, pile_index):
         """ Move the card to a new pile """
         self.remove_card_from_pile(card)
         self.piles[pile_index].append(card)
 
-    def on_mouse_release(self, x: float, y: float, button: int,
-                         modifiers: int):
-        """ Called when the user presses a mouse button. """
+    def on_mouse_release(self, x: float, y: float, button: int, modifiers: int):
+        """ Called when the user releases a mouse button. """
 
         # If we don't have any cards, who cares
         if len(self.held_cards) == 0:
             return
 
-        # Find the closest pile, in case we are in contact with more than one
+        # Find the closest pile
         pile, distance = arcade.get_closest_sprite(self.held_cards[0], self.pile_mat_list)
         reset_position = True
 
         # See if we are in contact with the closest pile
         if arcade.check_for_collision(self.held_cards[0], pile):
-
-            # What pile is it?
             pile_index = self.pile_mat_list.index(pile)
 
-            #  Is it the same pile we came from?
-            if pile_index == self.get_pile_for_card(self.held_cards[0]):
-                # If so, who cares. We'll just reset our position.
-                pass
-
             # Is it on a middle play pile?
-            elif PLAY_PILE_1 <= pile_index <= PLAY_PILE_7:
+            if PLAY_PILE_1 <= pile_index <= PLAY_PILE_7:
                 # Are there already cards there?
                 if len(self.piles[pile_index]) > 0:
-                    # Move cards to proper position
+                    # Get the top card of the pile we are dropping on
                     top_card = self.piles[pile_index][-1]
-                    for i, dropped_card in enumerate(self.held_cards):
-                        dropped_card.position = top_card.center_x, \
-                                                top_card.center_y - CARD_VERTICAL_OFFSET * (i + 1)
+
+                    # Check color and rank rules for Solitaire
+                    if self.get_card_colour(self.held_cards[0]) != self.get_card_colour(top_card):
+                        top_card_value = CARD_VALUES.index(top_card.value)
+                        dragged_card_value = CARD_VALUES.index(self.held_cards[0].value)
+
+                        if dragged_card_value == top_card_value - 1:
+                            # Move card to pile and adjust position
+                            for i, dropped_card in enumerate(self.held_cards):
+                                dropped_card.position = top_card.center_x, \
+                                                        top_card.center_y - CARD_VERTICAL_OFFSET * (i + 1)
+
+                            for card in self.held_cards:
+                                self.move_card_to_new_pile(card, pile_index)
+
+                            reset_position = False
                 else:
-                    # Are there no cards in the middle play pile?
-                    for i, dropped_card in enumerate(self.held_cards):
-                        # Move cards to proper position
-                        dropped_card.position = pile.center_x, \
-                                                pile.center_y - CARD_VERTICAL_OFFSET * i
+                    # If pile is empty, only Kings can be placed
+                    if self.held_cards[0].value == "K":
+                        for i, dropped_card in enumerate(self.held_cards):
+                            # Move card to the correct pile
+                            dropped_card.position = pile.center_x, pile.center_y - CARD_VERTICAL_OFFSET * i
 
-                for card in self.held_cards:
-                    # Cards are in the right position, but we need to move them to the right list
-                    self.move_card_to_new_pile(card, pile_index)
+                        for card in self.held_cards:
+                            self.move_card_to_new_pile(card, pile_index)
 
-                # Success, don't reset position of cards
-                reset_position = False
+                        reset_position = False
 
             # Release on top play pile? And only one card held?
             elif TOP_PILE_1 <= pile_index <= TOP_PILE_4 and len(self.held_cards) == 1:
-                # Move position of card to pile
-                self.held_cards[0].position = pile.position
-                # Move card to card list
-                for card in self.held_cards:
-                    self.move_card_to_new_pile(card, pile_index)
+                # Only allow moving the right suit and ascending rank order to top piles
+                top_card = self.piles[pile_index][-1] if len(self.piles[pile_index]) > 0 else None
 
-                reset_position = False
+                if top_card is None and self.held_cards[0].value == "A":
+                    # Allow an Ace on an empty top pile
+                    self.held_cards[0].position = pile.position
+                    self.move_card_to_new_pile(self.held_cards[0], pile_index)
+                    reset_position = False
+                elif top_card and top_card.suit == self.held_cards[0].suit:
+                    top_card_value = CARD_VALUES.index(top_card.value)
+                    dragged_card_value = CARD_VALUES.index(self.held_cards[0].value)
+
+                    if dragged_card_value == top_card_value + 1:
+                        # Move the card to the correct pile
+                        self.held_cards[0].position = pile.position
+                        self.move_card_to_new_pile(self.held_cards[0], pile_index)
+                        reset_position = False
+
+                # Trigger Solitaire Cipher steps after moving a card to the foundation pile
+                self.deck = cipher.count_cut(self.deck)  # Perform count cut
+                keystream = cipher.generate_keystream(self.deck, 1)  # Generate keystream
+
+                #decrypt one more letter from the encrypted msg
+                decrypted_part = cipher.decrypt(self.encrypted_message[:self.current_keystream_index + 1], self.initial_deck.copy())[:self.current_keystream_index + 1]
+
+                # Update the revealed message
+                self.revealed_message = decrypted_part
+                self.current_keystream_index += 1
+
+                print(f"Decrypted Message So Far: {self.revealed_message}")  # Print for now, can display in UI later
 
         if reset_position:
-            # Where-ever we were dropped, it wasn't valid. Reset the each card's position
+            # Wherever we were dropped, it wasn't valid. Reset the each card's position
             # to its original spot.
             for pile_index, card in enumerate(self.held_cards):
                 card.position = self.held_cards_original_position[pile_index]
@@ -334,13 +448,22 @@ class MyGame(arcade.Window):
         # We are no longer holding cards
         self.held_cards = []
 
+
+
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
         """ User moves mouse """
-
+        
         # If we are holding cards, move them with the mouse
         for card in self.held_cards:
-            card.center_x += dx
-            card.center_y += dy
+            new_x = card.center_x + dx
+            new_y = card.center_y + dy
+            
+            # Ensure the card doesn't go beyond the window borders
+            if CARD_WIDTH / 2 <= new_x <= SCREEN_WIDTH - CARD_WIDTH / 2:
+                card.center_x = new_x
+            if CARD_HEIGHT / 2 <= new_y <= SCREEN_HEIGHT - CARD_HEIGHT / 2:
+                card.center_y = new_y
+
 
 
 def main():
