@@ -68,16 +68,17 @@ TOP_PILE_2 = 10
 TOP_PILE_3 = 11
 TOP_PILE_4 = 12
 
+
 PHRASES = [
+    "Laufey",
+    "Estelle",
+    "Beyonce",
     "Rihanna",
     "Lady Gaga",
-    "Beyonce",
     "Katy Perry",
     "Miley Cyrus",
     "Zara Larsson",
-    "Sabrina Carpenter",
-    "Estelle",
-    "Laufey"
+    "Sabrina Carpenter"
 ]
 
 
@@ -124,11 +125,11 @@ class MyGame(arcade.Window):
         arcade.set_background_color(arcade.color.AMAZON)
 
         # List of cards we are dragging with the mouse
-        self.held_cards = None
+        self.held_cards = []
 
         # Original location of cards we are dragging with the mouse in case
         # they have to go back.
-        self.held_cards_original_position = None
+        self.held_cards_original_position = []
 
         # Sprite list with all the mats tha cards lay on.
         self.pile_mat_list = None
@@ -139,16 +140,24 @@ class MyGame(arcade.Window):
         # add level system
         self.level = 1  # start from lvl 1
 
+        self.game_complete = False  # to see if all levels are complete
+
     def setup(self):
         """ Set up the game here. Call this function to restart the game. """
+
+        # check if game is complete
+        if self.level > len(PHRASES):
+            self.game_complete = True
+            return
 
         # initialise cipher deck
         self.deck = cipher.initialise_deck()
         self.initial_deck = self.deck.copy()  # save initial state
 
-        # select random phrase
-        self.selected_phrase = random.choice(PHRASES)
-
+        try:
+            self.selected_phrase = PHRASES[self.level-1]
+        except:
+            print("balls")  # TESTING TAKE OUT LATER
         # encrypt selected phrase
         self.encrypted_message = cipher.encrypt(
             self.selected_phrase, self.initial_deck.copy())
@@ -157,8 +166,6 @@ class MyGame(arcade.Window):
         self.revealed_message = ["_"] * len(self.encrypted_message)
 
         self.current_keystream_index = 0
-
-        print(f"Encrypted msg (for testing)")  # TESTING TAKE OUT AFTER
 
         # List of cards we are dragging with the mouse
         self.held_cards = []
@@ -312,21 +319,33 @@ class MyGame(arcade.Window):
         # Clear the screen
         self.clear()
 
-        # Draw the mats the cards go on to
-        self.pile_mat_list.draw()
+        if self.game_complete:
+            # display congrats msg
+            arcade.draw_text("Congratulations! You've completed all levels", SCREEN_WIDTH / 2,
+                             SCREEN_HEIGHT / 2, arcade.color.WHITE, font_size=24, anchor_x="center")
 
-        # Draw the cards
-        self.card_list.draw()
+        else:
+            # normal game rendering
 
-        # display both encrypted and gradually revealed msg
-        encrypted_msg_display = ''.join(self.encrypted_message)
-        revealed_msg_display = ''.join(self.revealed_message)
+            # Draw the mats the cards go on to
+            self.pile_mat_list.draw()
 
-        # draw encrypted message at top
-        arcade.draw_text(
-            f"Encrypted Message: {encrypted_msg_display}", 600, 70, arcade.color.WHITE, 14)
-        arcade.draw_text(
-            f"Decrypted Message: {revealed_msg_display}", 600, 30, arcade.color.WHITE, 14)
+            # Draw the cards
+            self.card_list.draw()
+
+            # display both encrypted and gradually revealed msg
+            encrypted_msg_display = ''.join(self.encrypted_message)
+            revealed_msg_display = ''.join(self.revealed_message)
+
+            # draw encrypted message at top
+            arcade.draw_text(
+                f"Encrypted Message: {encrypted_msg_display}", 600, 70, arcade.color.WHITE, 14)
+            arcade.draw_text(
+                f"Decrypted Message: {revealed_msg_display}", 600, 30, arcade.color.WHITE, 14)
+            arcade.draw_text(
+                f"← Letters will Decrypt when cards are placed here", 500, 700, arcade.color.WHITE, 16)
+            arcade.draw_text(
+                f"Level: {self.level}", 600, 110, arcade.color.WHITE, 14)
 
     def pull_to_top(self, card: arcade.Sprite):
         """ Pull card to top of rendering order (last to render, looks on-top) """
@@ -338,9 +357,14 @@ class MyGame(arcade.Window):
     def on_key_press(self, symbol: int, modifiers: int):
         """ User presses key """
         if symbol == arcade.key.R:
-            # Restart
+            #increment the elevel when R is pressed
+            print("balls") #TESTING TAKE OUT AFTER
+            self.level += 1 
+            if self.level > len(PHRASES): #restart if 9 is exceeded
+                self.level = 1
+            
+            print(f"Restarting at level {self.level}")
             self.setup()
-
     def on_mouse_press(self, x, y, button, key_modifiers):
         """ Called when the user presses a mouse button. """
 
@@ -404,7 +428,6 @@ class MyGame(arcade.Window):
                     self.pull_to_top(card)
 
         else:
-
             # Click on a mat instead of a card?
             mats = arcade.get_sprites_at_point((x, y), self.pile_mat_list)
 
@@ -455,7 +478,8 @@ class MyGame(arcade.Window):
             return
 
         # Find the closest pile
-        pile, distance = arcade.get_closest_sprite(self.held_cards[0], self.pile_mat_list)
+        pile, distance = arcade.get_closest_sprite(
+            self.held_cards[0], self.pile_mat_list)
         reset_position = True
 
         # See if we are in contact with the closest pile
@@ -466,88 +490,79 @@ class MyGame(arcade.Window):
             if PLAY_PILE_1 <= pile_index <= PLAY_PILE_7:
                 # Are there already cards there?
                 if len(self.piles[pile_index]) > 0:
-                    # Get the top card of the pile we are dropping on
                     top_card = self.piles[pile_index][-1]
-
-                    # Check color and rank rules for Solitaire
                     if self.get_card_colour(self.held_cards[0]) != self.get_card_colour(top_card):
                         top_card_value = CARD_VALUES.index(top_card.value)
-                        dragged_card_value = CARD_VALUES.index(self.held_cards[0].value)
-
+                        dragged_card_value = CARD_VALUES.index(
+                            self.held_cards[0].value)
                         if dragged_card_value == top_card_value - 1:
-                            # Move card to pile and adjust position
                             for i, dropped_card in enumerate(self.held_cards):
                                 dropped_card.position = top_card.center_x, \
-                                                        top_card.center_y - CARD_VERTICAL_OFFSET * (i + 1)
-
+                                    top_card.center_y - \
+                                    CARD_VERTICAL_OFFSET * (i + 1)
                             for card in self.held_cards:
                                 self.move_card_to_new_pile(card, pile_index)
-
                             reset_position = False
                 else:
-                    # If pile is empty, only Kings can be placed
                     if self.held_cards[0].value == "K":
                         for i, dropped_card in enumerate(self.held_cards):
-                            # Move card to the correct pile
                             dropped_card.position = pile.center_x, pile.center_y - CARD_VERTICAL_OFFSET * i
-
                         for card in self.held_cards:
                             self.move_card_to_new_pile(card, pile_index)
-
                         reset_position = False
 
-            # Release on top play pile? And only one card held?
             elif TOP_PILE_1 <= pile_index <= TOP_PILE_4 and len(self.held_cards) == 1:
-                # Only allow moving the right suit and ascending rank order to top piles
-                top_card = self.piles[pile_index][-1] if len(self.piles[pile_index]) > 0 else None
-
+                top_card = self.piles[pile_index][-1] if len(
+                    self.piles[pile_index]) > 0 else None
                 if top_card is None and self.held_cards[0].value == "A":
-                    # Allow an Ace on an empty top pile
                     self.held_cards[0].position = pile.position
                     self.move_card_to_new_pile(self.held_cards[0], pile_index)
                     reset_position = False
                 elif top_card and top_card.suit == self.held_cards[0].suit:
                     top_card_value = CARD_VALUES.index(top_card.value)
-                    dragged_card_value = CARD_VALUES.index(self.held_cards[0].value)
-
+                    dragged_card_value = CARD_VALUES.index(
+                        self.held_cards[0].value)
                     if dragged_card_value == top_card_value + 1:
-                        # Move the card to the correct pile
                         self.held_cards[0].position = pile.position
-                        self.move_card_to_new_pile(self.held_cards[0], pile_index)
+                        self.move_card_to_new_pile(
+                            self.held_cards[0], pile_index)
                         reset_position = False
 
                 # Trigger Solitaire Cipher steps after moving a card to the foundation pile
-                self.deck = cipher.count_cut(self.deck)  # Perform count cut
-                keystream = cipher.generate_keystream(self.deck, 1)  # Generate keystream
+                self.deck = cipher.count_cut(self.deck)
+                keystream = cipher.generate_keystream(self.deck, 1)
 
-                # Reveal one more letter
                 if self.current_keystream_index < len(self.encrypted_message):
-                    # Decrypt next letter using current keystream
-                    decrypted_letter = cipher.decrypt(self.encrypted_message[:self.current_keystream_index + 1], self.initial_deck.copy())[-1]
-
-                    # Replace corresponding character in revealed_message list
+                    decrypted_letter = cipher.decrypt(
+                        self.encrypted_message[:self.current_keystream_index +
+                                               1], self.initial_deck.copy()
+                    )[-1]
                     self.revealed_message[self.current_keystream_index] = decrypted_letter
-
-                    # Move to next letter
                     self.current_keystream_index += 1
 
                 # Check if the player has finished revealing the message
-                if "".join(self.revealed_message) == self.encrypted_message:
+                if "".join(self.revealed_message).strip() == self.selected_phrase.strip():
+                    print("Phrase fully decrypted! Advancing level.")
                     self.advance_level()
 
+                print("revealed:", "".join(self.revealed_message))
+                print("expected:", self.selected_phrase)
+
         if reset_position:
-            # Wherever we were dropped, it wasn't valid. Reset each card's position
             for pile_index, card in enumerate(self.held_cards):
                 card.position = self.held_cards_original_position[pile_index]
 
-        # We are no longer holding cards
         self.held_cards = []
 
-
     def advance_level(self):
-        '''move to next level'''
+        '''move to next level or end game if all levels are complete'''
         print(f"Level {self.level} complete! Advancing to next level.")
         self.level += 1
+
+        if self.level > len(PHRASES):  # exit game after completing all phrases
+            print("Congratulations! You've completed all levels.")
+            arcade.exit()
+
         self.setup()
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
@@ -558,7 +573,7 @@ class MyGame(arcade.Window):
             new_x = card.center_x + dx
             new_y = card.center_y + dy
 
-            # Ensure the card doesn't go beyond the window borders
+            # Make sure card doesn't go beyond the window borders
             if CARD_WIDTH / 2 <= new_x <= SCREEN_WIDTH - CARD_WIDTH / 2:
                 card.center_x = new_x
             if CARD_HEIGHT / 2 <= new_y <= SCREEN_HEIGHT - CARD_HEIGHT / 2:
