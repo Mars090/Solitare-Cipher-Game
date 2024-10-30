@@ -1,7 +1,23 @@
 # Maaz-Keriwala-S2-AT2
 
-|17/10/24|
+- THE ACTUAL IMPLEMENTATION OF THE ALGORITHM IS ON LINES 406-409 OF 'SOLITAIRE GAME.PY', OTHERWISE I WILL CREATE GRAPHS FOR ESSAY
+🎲 Solitaire Cipher Game Rules
+Objective: The goal of this game is to decrypt a hidden message by strategically moving cards to reveal letters.
 
-- Created the 'Assignment.py' document
-- Created a scaffold of the game, rendering screen and getting x and y values of the mouse
-- 
+🃏 Game Rules:
+Game Setup:
+    The game consists of a deck of cards, piles for organizing cards, and an encrypted message that players will gradually decrypt.
+Game Controls:
+    Drag and Drop: Use the mouse to move cards from one pile to another.
+    Levels: Press R to shuffle through the level difficulties.
+Card Placement:
+    Place cards in foundation piles in sequence to decrypt the message.
+    Each correctly placed card in a foundation pile contributes to revealing letters in the hidden message.
+Winning Conditions:
+    Successfully decrypt the phrase by following the Solitaire Cipher rules.
+    Complete each level to progress, and after decrypting the final phrase, you win the game!
+Game Levels:
+    Each level increases in difficulty with phrases of varying lengths to decrypt.
+Tips:
+    Plan your card moves carefully, as incorrect placements might hinder progress.
+    Keep track of the decrypted letters to help guess the phrase as it’s revealed.

@@ -8,6 +8,8 @@ import arcade
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 768
 SCREEN_TITLE = "Solitaire"
+HELP_WINDOW_WIDTH = 600
+HELP_WINDOW_HEIGHT = 400
 
 # Constants for sizing
 CARD_SCALE = 0.6
@@ -80,6 +82,29 @@ PHRASES = [
     "Zara Larsson",
     "Sabrina Carpenter"
 ]
+
+class HelpWindow(arcade.Window):
+    """ Window to display game rules when 'H' is pressed """
+
+    def __init__(self):
+        super().__init__(HELP_WINDOW_WIDTH, HELP_WINDOW_HEIGHT, "Game Rules")
+        arcade.set_background_color(arcade.color.LIGHT_GRAY)
+
+    def on_draw(self):
+        """ Draw the game rules """
+        self.clear()
+        rules_text = (
+            "Welcome to Solitaire Cipher Game!\n\n"
+            "Rules:\n"
+            "1. Use the mouse to move cards to play piles and foundation.\n"
+            "2. Cards are automatically decrypted when placed in foundation.\n"
+            "3. Press 'R' to restart the level.\n"
+            "4. Press 'H' to view these rules.\n\n"
+            "Good luck decrypting the phrases!"
+        )
+        arcade.draw_text(rules_text, 20, HELP_WINDOW_HEIGHT - 50,
+                         arcade.color.BLACK, font_size=14, anchor_x="left")
+
 
 
 class Card(arcade.Sprite):
@@ -322,7 +347,7 @@ class MyGame(arcade.Window):
         if self.game_complete:
             # display congrats msg
             arcade.draw_text("Congratulations! You've completed all levels", SCREEN_WIDTH / 2,
-                             SCREEN_HEIGHT / 2, arcade.color.WHITE, font_size=24, anchor_x="center")
+                             SCREEN_HEIGHT / 2, arcade.color.WHITE, font_size=24, anchor_x="center") #doesnt really work
 
         else:
             # normal game rendering
@@ -356,15 +381,18 @@ class MyGame(arcade.Window):
 
     def on_key_press(self, symbol: int, modifiers: int):
         """ User presses key """
-        if symbol == arcade.key.R:
-            #increment the elevel when R is pressed
-            print("balls") #TESTING TAKE OUT AFTER
-            self.level += 1 
-            if self.level > len(PHRASES): #restart if 9 is exceeded
+        if symbol == arcade.key.H:
+            HelpWindow()
+        elif symbol == arcade.key.R:
+            # increment the elevel when R is pressed
+            print("balls")  # TESTING TAKE OUT AFTER
+            self.level += 1
+            if self.level > len(PHRASES):  # restart if 9 is exceeded
                 self.level = 1
-            
+
             print(f"Restarting at level {self.level}")
             self.setup()
+
     def on_mouse_press(self, x, y, button, key_modifiers):
         """ Called when the user presses a mouse button. """
 
@@ -405,7 +433,7 @@ class MyGame(arcade.Window):
                 cipher.move_joker_a(self.deck)
                 cipher.move_joker_b(self.deck)
                 self.deck = cipher.triple_cut(self.deck)
-                self.deck = cipher.count_cut(self.deck)
+                self.deck = cipher.count_cut(self.deck)      #THIS IS THE ACTUAL ALGORITHM IMPLEMENTATION
 
             elif primary_card.is_face_down:
                 # Is the card face down? In one of those middle 7 piles? Then flip up
