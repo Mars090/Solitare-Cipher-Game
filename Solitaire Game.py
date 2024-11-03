@@ -384,7 +384,7 @@ class MyGame(arcade.Window):
         if symbol == arcade.key.H:
             HelpWindow()
         elif symbol == arcade.key.R:
-            # increment the elevel when R is pressed
+            # increment the level when R is pressed
             print("balls")  # TESTING TAKE OUT AFTER
             self.level += 1
             if self.level > len(PHRASES):  # restart if 9 is exceeded
@@ -392,6 +392,14 @@ class MyGame(arcade.Window):
 
             print(f"Restarting at level {self.level}")
             self.setup()
+        elif symbol == arcade.key.M:
+            #music
+            print("audio balls")
+            audio = arcade.load_sound('Doom music.wav')
+            arcade.play_sound(audio, True)
+            if symbol == arcade.key.M:
+                audio = arcade.load_sound('Doom music.wav', False)
+                arcade.play_sound(audio)
 
     def on_mouse_press(self, x, y, button, key_modifiers):
         """ Called when the user presses a mouse button. """

@@ -1,7 +1,9 @@
 # Maaz-Keriwala-S2-AT2
 
 - THE ACTUAL IMPLEMENTATION OF THE ALGORITHM IS ON LINES 406-409 OF 'SOLITAIRE GAME.PY', OTHERWISE I WILL CREATE GRAPHS FOR ESSAY
-🎲 Solitaire Cipher Game Rules
+- Also I tried to code a sort of 'rules' window, but apparently because of my device I can't run it. I still left the code in there if you want to try it (press H)
+
+🂠 Solitaire Cipher Game Rules 🂨
 Objective: The goal of this game is to decrypt a hidden message by strategically moving cards to reveal letters.
 
 🃏 Game Rules:
