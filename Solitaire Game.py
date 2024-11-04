@@ -83,7 +83,7 @@ PHRASES = [
     "Sabrina Carpenter"
 ]
 
-class HelpWindow(arcade.Window):
+class HelpWindow(arcade.Window): #DOESN'T WORK 
     """ Window to display game rules when 'H' is pressed """
 
     def __init__(self):
@@ -151,6 +151,10 @@ class MyGame(arcade.Window):
 
         # List of cards we are dragging with the mouse
         self.held_cards = []
+        
+        self.is_music_playing = False
+        self.music = arcade.load_sound('Doom music.wav')
+        self.music_player = None
 
         # Original location of cards we are dragging with the mouse in case
         # they have to go back.
@@ -182,7 +186,7 @@ class MyGame(arcade.Window):
         try:
             self.selected_phrase = PHRASES[self.level-1]
         except:
-            print("balls")  # TESTING TAKE OUT LATER
+            print("Error")  # TESTING TAKE OUT LATER
         # encrypt selected phrase
         self.encrypted_message = cipher.encrypt(
             self.selected_phrase, self.initial_deck.copy())
@@ -364,13 +368,15 @@ class MyGame(arcade.Window):
 
             # draw encrypted message at top
             arcade.draw_text(
-                f"Encrypted Message: {encrypted_msg_display}", 600, 70, arcade.color.WHITE, 14)
+                f"Encrypted Message: {encrypted_msg_display}", 500, 70, arcade.color.WHITE, 14)
             arcade.draw_text(
-                f"Decrypted Message: {revealed_msg_display}", 600, 30, arcade.color.WHITE, 14)
+                f"Decrypted Message: {revealed_msg_display}", 500, 30, arcade.color.WHITE, 14)
             arcade.draw_text(
                 f"← Letters will Decrypt when cards are placed here", 500, 700, arcade.color.WHITE, 16)
             arcade.draw_text(
-                f"Level: {self.level}", 600, 110, arcade.color.WHITE, 14)
+                f"Level: {self.level}", 500, 110, arcade.color.WHITE, 14)
+            arcade.draw_text(
+                f"Press 'M' to toggle music! (BE ADVISED IT IS VERY LOUD)", 500, 150, arcade.color.WHITE, 14)
 
     def pull_to_top(self, card: arcade.Sprite):
         """ Pull card to top of rendering order (last to render, looks on-top) """
@@ -385,22 +391,24 @@ class MyGame(arcade.Window):
             HelpWindow()
         elif symbol == arcade.key.R:
             # increment the level when R is pressed
-            print("balls")  # TESTING TAKE OUT AFTER
             self.level += 1
             if self.level > len(PHRASES):  # restart if 9 is exceeded
                 self.level = 1
-
             print(f"Restarting at level {self.level}")
             self.setup()
         elif symbol == arcade.key.M:
-            #music
-            print("audio balls")
-            audio = arcade.load_sound('Doom music.wav')
-            arcade.play_sound(audio, True)
-            if symbol == arcade.key.M:
-                audio = arcade.load_sound('Doom music.wav', False)
-                arcade.play_sound(audio)
-
+            if not self.is_music_playing:
+                print(f"Playing Music")
+                self.music_player = arcade.play_sound(self.music, looping=True)
+                self.is_music_playing = True
+            else:
+                if self.music_player:
+                    print(f"Pausing Music")
+                    self.music_player.pause()
+                else:
+                    self.music_player.play()
+                self.is_music_playing = not self.is_music_playing
+                
     def on_mouse_press(self, x, y, button, key_modifiers):
         """ Called when the user presses a mouse button. """
 
