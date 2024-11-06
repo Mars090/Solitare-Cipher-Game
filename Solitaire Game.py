@@ -83,7 +83,8 @@ PHRASES = [
     "Sabrina Carpenter"
 ]
 
-class HelpWindow(arcade.Window): #DOESN'T WORK 
+
+class HelpWindow(arcade.Window):  # DOESN'T WORK
     """ Window to display game rules when 'H' is pressed """
 
     def __init__(self):
@@ -99,12 +100,12 @@ class HelpWindow(arcade.Window): #DOESN'T WORK
             "1. Use the mouse to move cards to play piles and foundation.\n"
             "2. Cards are automatically decrypted when placed in foundation.\n"
             "3. Press 'R' to restart the level.\n"
-            "4. Press 'H' to view these rules.\n\n"
+            "4. Press 'H' to view these rules.\n"
+            "5. Press 'M' to toggle music.\n\n"
             "Good luck decrypting the phrases!"
         )
         arcade.draw_text(rules_text, 20, HELP_WINDOW_HEIGHT - 50,
                          arcade.color.BLACK, font_size=14, anchor_x="left")
-
 
 
 class Card(arcade.Sprite):
@@ -151,7 +152,7 @@ class MyGame(arcade.Window):
 
         # List of cards we are dragging with the mouse
         self.held_cards = []
-        
+
         self.is_music_playing = False
         self.music = arcade.load_sound('Doom music.wav')
         self.music_player = None
@@ -351,7 +352,7 @@ class MyGame(arcade.Window):
         if self.game_complete:
             # display congrats msg
             arcade.draw_text("Congratulations! You've completed all levels", SCREEN_WIDTH / 2,
-                             SCREEN_HEIGHT / 2, arcade.color.WHITE, font_size=24, anchor_x="center") #doesnt really work
+                             SCREEN_HEIGHT / 2, arcade.color.WHITE, font_size=24, anchor_x="center")  # doesnt really work
 
         else:
             # normal game rendering
@@ -408,7 +409,7 @@ class MyGame(arcade.Window):
                 else:
                     self.music_player.play()
                 self.is_music_playing = not self.is_music_playing
-                
+
     def on_mouse_press(self, x, y, button, key_modifiers):
         """ Called when the user presses a mouse button. """
 
@@ -449,7 +450,8 @@ class MyGame(arcade.Window):
                 cipher.move_joker_a(self.deck)
                 cipher.move_joker_b(self.deck)
                 self.deck = cipher.triple_cut(self.deck)
-                self.deck = cipher.count_cut(self.deck)      #THIS IS THE ACTUAL ALGORITHM IMPLEMENTATION
+                # THIS IS THE ACTUAL ALGORITHM IMPLEMENTATION
+                self.deck = cipher.count_cut(self.deck)
 
             elif primary_card.is_face_down:
                 # Is the card face down? In one of those middle 7 piles? Then flip up

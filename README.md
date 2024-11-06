@@ -13,7 +13,7 @@ Game Setup:
 Game Controls:
     Drag and Drop: Use the mouse to move cards from one pile to another.
     Levels: Press 'R' to shuffle through the level difficulties.
-    Music: Press 'H' to toggle music.
+    Music: Press 'M' to toggle music.
 Card Placement:
     Place cards in foundation piles in sequence to decrypt the message.
     Each correctly placed card in a foundation pile contributes to revealing letters in the hidden message.
