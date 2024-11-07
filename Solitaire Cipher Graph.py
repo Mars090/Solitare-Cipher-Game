@@ -2,7 +2,7 @@ import time
 import matplotlib.pyplot as plt
 import string
 
-# Solitaire Cipher implementation
+# Solitaire Cipher Graph
 
 
 def initialise_deck():
@@ -12,10 +12,6 @@ def initialise_deck():
 def text_to_numbers(text):
     text = text.upper()
     return [ord(char) - ord('A') + 1 for char in text if char in string.ascii_uppercase]
-
-
-def num_to_text(num):
-    pass
 
 
 def numbers_to_text(numbers):
@@ -80,35 +76,43 @@ def encrypt(message, deck):
     return numbers_to_text(encrypted_numbers)
 
 
-def decrypt(message, deck):
-    pass
+def decrypt(ciphertext, deck):
+    ciphertext_numbers = text_to_numbers(ciphertext)
+    keystream = generate_keystream(deck, len(ciphertext_numbers))
+    decrypted_numbers = [(c - k - 1) % 26 + 1 for c,
+                         k in zip(ciphertext_numbers, keystream)]
+    return numbers_to_text(decrypted_numbers)
 
 
 # Measuring time for different input sizes
 message_lengths = [10, 50, 100, 200, 300, 400, 500]
-times = []
+encryption_times = []
+decryption_times = []
 
 # ENCRYPTION ANALYSIS
-for elength in message_lengths:
-    message = "A" * elength  # create a sample message of 'A's with the specified length
+for length in message_lengths:
+    message = "A" * length  # create a sample message of 'A's with the specified length
     deck = initialise_deck()  # fresh deck for each run
     start_time = time.time()
     encrypt(message, deck)  # run encryption
     end_time = time.time()
-    times.append(end_time - start_time)
+    encryption_times.append(end_time - start_time)
 
-# #DECRYPTION ANALYSIS
-# for dlength in message_lengths:
-#     message = "A" * dlength
-#     deck = initialise_deck()
-#     start_time = time.time()
-#     decrypt(message, deck)
-#     end_time = time.time()
-#     times.append(end_time - start_time)
+# DECRYPTION ANALYSIS
+for length in message_lengths:
+    message = "A" * length  # create a sample message of 'A's with the specified length
+    deck = initialise_deck()  # fresh deck for each run
+    encrypted_message = encrypt(message, deck)  # First encrypt the message
+    start_time = time.time()
+    decrypt(encrypted_message, deck)  # run decryption
+    end_time = time.time()
+    decryption_times.append(end_time - start_time)
 
 # Plotting the results
-plt.plot(message_lengths, times, marker='o')
-plt.xlabel("Message Length (m)")
+plt.plot(message_lengths, encryption_times, marker='o', label='Encryption')
+plt.plot(message_lengths, decryption_times, marker='x', label='Decryption')
+plt.xlabel("Message Length")
 plt.ylabel("Time (seconds)")
-plt.title("Efficiency Analysis of Solitaire Cipher Encryption")
+plt.title("Efficiency Analysis of Solitaire Cipher Encryption and Decryption")
+plt.legend()
 plt.show()

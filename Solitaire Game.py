@@ -70,8 +70,9 @@ TOP_PILE_2 = 10
 TOP_PILE_3 = 11
 TOP_PILE_4 = 12
 
-
+# THIS IS WHERE TO CHANGE PHRASES (ORDERED FROM LOWEST-HIGHEST)
 PHRASES = [
+    "Kesha",
     "Laufey",
     "Estelle",
     "Beyonce",
@@ -80,6 +81,8 @@ PHRASES = [
     "Katy Perry",
     "Miley Cyrus",
     "Zara Larsson",
+    "Taylor Swift",
+    "Carly Rae Jepsen",
     "Sabrina Carpenter"
 ]
 
@@ -378,6 +381,8 @@ class MyGame(arcade.Window):
                 f"Level: {self.level}", 500, 110, arcade.color.WHITE, 14)
             arcade.draw_text(
                 f"Press 'M' to toggle music! (BE ADVISED IT IS VERY LOUD)", 500, 150, arcade.color.WHITE, 14)
+            arcade.draw_text(
+                f"Press 'R' to shuffle through words!", 500, 190, arcade.color.WHITE, 14)
 
     def pull_to_top(self, card: arcade.Sprite):
         """ Pull card to top of rendering order (last to render, looks on-top) """
@@ -396,6 +401,7 @@ class MyGame(arcade.Window):
             if self.level > len(PHRASES):  # restart if 9 is exceeded
                 self.level = 1
             print(f"Restarting at level {self.level}")
+            print("testing balls") #testing take out later
             self.setup()
         elif symbol == arcade.key.M:
             if not self.is_music_playing:
