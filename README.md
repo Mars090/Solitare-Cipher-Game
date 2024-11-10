@@ -1,11 +1,13 @@
 # Maaz-Keriwala-S2-AT2
 
 NOTE:
-    - THE ACTUAL IMPLEMENTATION OF THE ALGORITHM IS ON LINES 449-453 OF 'SOLITAIRE GAME.PY', OTHERWISE I WILL CREATE GRAPHS FOR THE BIG O ANALYSIS
+    - THE ACTUAL ALGORITHM IS IN 'Solitaire_Cipher.py', 'Solitaire Game.py' is just the implementation/application
     - Also I tried to code a sort of 'rules' window, but apparently because of my device I can't run it. I still left the code in there if you want to try it (press 'H')
 
 🂠 Solitaire Cipher Game Rules 🂨
 Objective: The goal of this game is to decrypt a hidden message by strategically moving cards to reveal letters.
+
+$$$NOTE: ORIGINAL SOLITAIRE RULES ARE REQUIRED TO PLAY THIS GAME$$$
 
 🃏 Game Rules:
 Game Setup:
@@ -25,3 +27,7 @@ Game Levels:
 Tips:
     Plan your card moves carefully, as incorrect placements might hinder progress.
     Keep track of the decrypted letters to help guess the phrase as it’s revealed.
+
+
+I used these links:
+- https://www.youtube.com/watch?v=kpnW68Q8ltc (Doom Background Music)

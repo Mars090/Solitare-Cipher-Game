@@ -1,3 +1,5 @@
+'''NOTE READ THE README FIRST'''
+
 import time
 import matplotlib.pyplot as plt
 import string

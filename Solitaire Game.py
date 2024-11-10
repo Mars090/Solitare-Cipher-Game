@@ -1,3 +1,5 @@
+'''NOTE READ THE README FIRST'''
+
 from typing import Optional
 
 import Solitare_Cipher as cipher
@@ -401,7 +403,7 @@ class MyGame(arcade.Window):
             if self.level > len(PHRASES):  # restart if 9 is exceeded
                 self.level = 1
             print(f"Restarting at level {self.level}")
-            print("testing balls") #testing take out later
+            print("testing balls")  # testing take out later
             self.setup()
         elif symbol == arcade.key.M:
             if not self.is_music_playing:
@@ -635,7 +637,7 @@ class MyGame(arcade.Window):
 def main():
     """ Main function """
     window = MyGame()
-    window.setup()
+    window.setup() 
     arcade.run()
 
 
